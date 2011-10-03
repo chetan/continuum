@@ -13,8 +13,8 @@ Gem::Specification.new do |s|
   s.description = %q{A Ruby gem that interfaces with OpenTSDB.}
 
   s.rubyforge_project = "continuum"
-  s.add_dependency 'hugs'
   s.add_dependency 'rake'
+  s.add_dependency 'eventmachine'
   s.add_development_dependency 'fakeweb'
   s.add_development_dependency 'vcr', '1.5.0'
   s.add_development_dependency 'autotest-standalone'
