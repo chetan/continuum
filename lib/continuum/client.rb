@@ -1,6 +1,13 @@
 module Continuum
   # Create an instance of the client to interface with the OpenTSDB API (http://opentsdb.net/http-api.html)
   class Client
+
+    attr_reader :write_connection
+
+    def self.start_reactor
+      Thread.new { EM.run } unless EM.reactor_running?
+    end
+
     # Create an connection to a specific OpenTSDB instance
     #
     # *Params:*
@@ -12,14 +19,12 @@ module Continuum
     #
     # A client to play with
     def initialize host = '127.0.0.1', port = 4242
+      self.class.start_reactor
       @host = host
       @port = port
-      @client = Hugs::Client.new(
-        :host   => @host,
-        :port   => @port,
-        :scheme => 'http',
-        :type   => :none
-      )
+      EM.next_tick {
+        @write_connection = EM.connect host, port, WriteConnection, self
+      }
     end
 
     # Lists the supported aggregators by this instance
@@ -28,8 +33,8 @@ module Continuum
     #
     # An array of aggregators.
     def aggregators
-      response = @client.get '/aggregators?json=true'
-      JSON.parse response.body
+      response = get_http '/aggregators?json=true'
+      JSON.parse response
     end
 
     # Lists an array of log lines. By default, OpenTSDB returns 1024 lines.
@@ -39,8 +44,8 @@ module Continuum
     #
     # An array of log lines.
     def logs
-      response = @client.get '/logs?json=true'
-      JSON.parse response.body
+      response = get_http '/logs?json=true'
+      JSON.parse response
     end
 
     # Queries the instance for a graph. 3 (useful) formats are supported:
@@ -80,12 +85,12 @@ module Continuum
       format = options.delete(:format) || options.delete('format') || 'json'
       options[format.to_sym] = true
       params   = query_params(options, [:start, :m])
-      response = @client.get "/q?#{params}"
+      response = get_http "/q?#{params}"
 
       if format.to_sym == :json
-        JSON.parse response.body
+        JSON.parse response
       else
-        response.body
+        response
       end
     end
 
@@ -94,8 +99,8 @@ module Continuum
     # Returns:
     # An array of stats.
     def stats
-      response = @client.get '/stats?json'
-      JSON.parse response.body
+      response = get_http '/stats?json'
+      JSON.parse response
     end
 
     # Returns suggestions for metric or tag names.
@@ -111,20 +116,22 @@ module Continuum
     # Returns:
     # An array of suggestions
     def suggest query, type = 'metrics'
-      response = @client.get "/suggest?q=#{query}&type=#{type}"
-      JSON.parse response.body
+      response = get_http "/suggest?q=#{query}&type=#{type}"
+      JSON.parse response
     end
 
     # Format
     # put <metric> <tisse> <value> host=<hostname>
     # put proc.loadavg.5m 1305308654 0.01 host=i-00000106
-    def metric name, value
-      message = "put #{name} #{Time.now.to_i} #{value} host=#{Socket.gethostname}"
-
-      socket = TCPSocket.new @host, @port
-      socket.write message
-      socket.close
-
+    def metric name, value, ts = Time.now, tags = {}
+      tags ||= {}
+      tags[:host] ||= tags.delete("host") || Socket.gethostname
+      tag_str = tags.collect { |k, v| "%s=%s" % [k, v] }.join(" ")
+      if !tag_str.empty?
+        tag_str = " #{tag_str}"
+      end
+      message = "put #{name} #{ts.to_i} #{value}#{tag_str}\n"
+      @write_connection && @write_connection.send_data(message)
       message
     end
 
@@ -133,8 +140,8 @@ module Continuum
     # Returns
     # An array with the version information
     def version
-      response = @client.get '/version?json'
-      JSON.parse response.body
+      response = get_http '/version?json'
+      JSON.parse response
     end
 
     # Parses a query param hash into a query string as expected by OpenTSDB
@@ -166,5 +173,55 @@ module Continuum
       end
       query.join '&'
     end
+
+    module WriteConnection
+      attr_reader :client, :connected, :failures
+
+      BACKOFF = 2
+      MAX_RECONNECT_DELAY = 5
+
+      def initialize(c)
+        @client = c
+        @dropped_messages = []
+      end
+
+      def connection_completed
+        @connected = true
+        @failures = 0
+        dropped = @dropped_messages.dup
+        @dropped_messages = []
+        dropped.each do |msg|
+          send_data(msg)
+        end
+      end
+
+      def receive_data(data)
+      end
+
+      def send_data(data)
+        if @connected
+          super
+        else
+          @dropped_messages << data
+        end
+      end
+
+      def unbind
+        @connected = false
+        @failures = @failures.to_i + 1
+        delay = [@failures ** BACKOFF / 10.to_f, MAX_RECONNECT_DELAY].min
+        EM::Timer.new(delay) do
+          reconnect(tracker.host, tracker.port)
+        end
+      end
+    end
+
+    private
+
+    def get_http(path)
+      path = path[1..-1] if path[0..0] == "/"
+      Net::HTTP.get(URI.parse("http://%s:%i/%s" % [@host, @port, path]))
+    end
+
   end
 end

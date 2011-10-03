@@ -1,6 +1,6 @@
-require 'hugs'
+require 'eventmachine'
 require 'json'
-require 'socket'
+require 'net/http'
 require 'continuum/client'
 
 ## Continuum
