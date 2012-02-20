@@ -1,12 +1,11 @@
+
+require 'socket'
+
 module Continuum
   # Create an instance of the client to interface with the OpenTSDB API (http://opentsdb.net/http-api.html)
   class Client
 
     attr_reader :write_connection
-
-    def self.start_reactor
-      Thread.new { EM.run } unless EM.reactor_running?
-    end
 
     # Create an connection to a specific OpenTSDB instance
     #
@@ -19,12 +18,8 @@ module Continuum
     #
     # A client to play with
     def initialize host = '127.0.0.1', port = 4242
-      self.class.start_reactor
       @host = host
       @port = port
-      EM.next_tick {
-        @write_connection = EM.connect host, port, WriteConnection, self
-      }
     end
 
     # Lists the supported aggregators by this instance
@@ -125,14 +120,13 @@ module Continuum
     # put proc.loadavg.5m 1305308654 0.01 host=i-00000106
     def metric name, value, ts = Time.now, tags = {}
       tags ||= {}
-      tags[:host] ||= tags.delete("host") || Socket.gethostname
       tag_str = tags.collect { |k, v| "%s=%s" % [k, v] }.join(" ")
       if !tag_str.empty?
         tag_str = " #{tag_str}"
       end
       message = "put #{name} #{ts.to_i} #{value}#{tag_str}\n"
-      @write_connection && @write_connection.send_data(message)
-      message
+      socket_write(message)
+      true
     end
 
     # Returns the version of OpenTSDB
@@ -174,47 +168,6 @@ module Continuum
       query.join '&'
     end
 
-    module WriteConnection
-      attr_reader :client, :connected, :failures
-
-      BACKOFF = 2
-      MAX_RECONNECT_DELAY = 5
-
-      def initialize(c)
-        @client = c
-        @dropped_messages = []
-      end
-
-      def connection_completed
-        @connected = true
-        @failures = 0
-        dropped = @dropped_messages.dup
-        @dropped_messages = []
-        dropped.each do |msg|
-          send_data(msg)
-        end
-      end
-
-      def receive_data(data)
-      end
-
-      def send_data(data)
-        if @connected
-          super
-        else
-          @dropped_messages << data
-        end
-      end
-
-      def unbind
-        @connected = false
-        @failures = @failures.to_i + 1
-        delay = [@failures ** BACKOFF / 10.to_f, MAX_RECONNECT_DELAY].min
-        EM::Timer.new(delay) do
-          reconnect(tracker.host, tracker.port)
-        end
-      end
-    end
 
     private
 
@@ -222,6 +175,26 @@ module Continuum
       path = path[1..-1] if path[0..0] == "/"
       Net::HTTP.get(URI.parse("http://%s:%i/%s" % [@host, @port, path]))
     end
+
+    def client
+      @client ||= TCPSocket.new(@host, @port)
+    end
+
+    def socket_write(msg)
+      c = 0
+      loop do
+
+        c += 1
+        begin
+          client.sendmsg(msg)
+          return
+        rescue Exception => ex
+          @client = nil
+          raise ex if c > 3
+        end
+
+      end # loop
+    end # write
 
   end
 end
