@@ -5,6 +5,7 @@ require 'eventmachine'
 require 'em-http-request'
 
 module Continuum
+
   # Create an instance of the client to interface with the OpenTSDB API (http://opentsdb.net/http-api.html)
   class Client
 
@@ -95,7 +96,9 @@ module Continuum
     # Run multiple parallel queries
     #
     # Takes an array of option hashes in the same format as the query method.
-    def multi_query opts
+    #
+    # * threads - maximum number of parallel connections
+    def multi_query opts, threads=4
       if opts.nil? or opts.empty?
         return opts
       end
@@ -216,23 +219,27 @@ module Continuum
       return em_get_http(uris)
     end
 
-    def em_get_http(uris)
+    def em_get_http(uris, threads=4)
       uris = [ uris ] if not uris.kind_of? Array
       results = []
-      EventMachine.run do
-        multi = EventMachine::MultiRequest.new
 
-        uris.each_with_index do |uri, i|
-          multi.add i, EventMachine::HttpRequest.new(uri).get
-        end
+      Batch.new(uris).each_with_index(threads) do |batch, pad|
+        EventMachine.run do
+          multi = EventMachine::MultiRequest.new
 
-        multi.callback do
-          uris.each_with_index do |uri, i|
-            results << multi.responses[:callback][i].response
+          batch.each_with_index do |uri, i|
+            multi.add (i+pad), EventMachine::HttpRequest.new(uri).get
           end
-          EventMachine.stop
+
+          multi.callback do
+            batch.each_with_index do |uri, i|
+              results << multi.responses[:callback][(i+pad)].response
+            end
+            EventMachine.stop
+          end
         end
       end
+
       return results
     end
 
@@ -261,5 +268,25 @@ module Continuum
       end # loop
     end # write
 
+  end # Client
+
+  # Helper for multi_query
+  class Batch < Array
+    def each(batch_size, &block)
+      loops = (size().to_f / batch_size).ceil
+      (0..loops-1).each do |l|
+        batch = slice(l*batch_size, batch_size)
+        yield(batch)
+      end
+    end
+
+    def each_with_index(batch_size, &block)
+      c = 0
+      each(batch_size) do |batch|
+        yield(batch.to_a, c)
+        c += batch_size
+      end
+    end
   end
+
 end
