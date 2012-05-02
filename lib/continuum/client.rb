@@ -1,4 +1,9 @@
 
+require 'json'
+require 'socket'
+require 'eventmachine'
+require 'em-http-request'
+
 module Continuum
   # Create an instance of the client to interface with the OpenTSDB API (http://opentsdb.net/http-api.html)
   class Client
@@ -87,6 +92,35 @@ module Continuum
       end
     end
 
+    # Run multiple parallel queries
+    #
+    # Takes an array of option hashes in the same format as the query method.
+    def multi_query opts
+      if opts.nil? or opts.empty?
+        return opts
+      end
+
+      reqs = []
+      opts.each do |options|
+        format = options.delete(:format) || options.delete('format') || 'json'
+        options[format.to_sym] = true
+        params   = query_params(options, [:start, :m])
+        reqs << "/q?#{params}"
+      end
+
+      responses = multi_get_http(reqs)
+      ret = []
+      responses.each_with_index do |response, i|
+        if reqs[i] =~ /json/ then
+          ret << JSON.parse(response)
+        else
+          ret << response
+        end
+      end
+
+      return ret
+    end
+
     # Stats about the OpenTSDB server itself.
     #
     # Returns:
@@ -170,8 +204,41 @@ module Continuum
     private
 
     def get_http(path)
+      return em_get_http(path_to_uri(path)).first
+    end
+
+    def multi_get_http(paths)
+      paths = [ paths ] if not paths.kind_of? Array
+      uris = []
+      paths.each do |path|
+        uris << path_to_uri(path)
+      end
+      return em_get_http(uris)
+    end
+
+    def em_get_http(uris)
+      uris = [ uris ] if not uris.kind_of? Array
+      results = []
+      EventMachine.run do
+        multi = EventMachine::MultiRequest.new
+
+        uris.each_with_index do |uri, i|
+          multi.add i, EventMachine::HttpRequest.new(uri).get
+        end
+
+        multi.callback do
+          uris.each_with_index do |uri, i|
+            results << multi.responses[:callback][i].response
+          end
+          EventMachine.stop
+        end
+      end
+      return results
+    end
+
+    def path_to_uri(path)
       path = path[1..-1] if path[0..0] == "/"
-      Net::HTTP.get(URI.parse("http://%s:%i/%s" % [@host, @port, path]))
+      return URI.parse("http://%s:%i/%s" % [@host, @port, path])
     end
 
     def client

@@ -50,6 +50,22 @@ describe Continuum::Client do
       end
     end
 
+    describe :multi_json do
+      before do
+        VCR.use_cassette 'query_json' do
+          @data = @client.multi_query([{
+            :start => '2h-ago',
+            :m     => ['sum:rate:proc.net.bytes', 'sum:rate:proc.stat.cpu']
+          }]).first
+        end
+      end
+
+      it 'should return metadata points' do
+        expected = {"plotted"=>611, "points"=>1719, "etags"=>[["direction"], ["type"]], "timing"=>294}
+        assert_equal expected, @data
+      end
+    end
+
     describe :ascii do
       before do
         VCR.use_cassette 'query_ascii' do

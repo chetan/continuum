@@ -1,7 +1,4 @@
 
-require 'json'
-require 'net/http'
-require 'socket'
 require 'continuum/client'
 
 ## Continuum

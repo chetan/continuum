@@ -1,7 +1,7 @@
 Bundler.setup :default, :test
 
 require "continuum"
-require "fakeweb"
+require "webmock"
 require "minitest/spec"
 require "nokogiri"
 require "vcr"
@@ -14,7 +14,7 @@ Turn.config.framework = :minitest
 Turn.config.format = :outline
 
 VCR.config do |c|
-  c.stub_with :fakeweb
+  c.stub_with :webmock
   c.cassette_library_dir     = "test/cassettes"
   c.default_cassette_options = { :record => :none }
 end
