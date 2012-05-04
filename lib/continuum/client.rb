@@ -1,5 +1,5 @@
 
-require 'json'
+require 'multi_json'
 require 'socket'
 
 module Continuum
@@ -31,7 +31,7 @@ module Continuum
     # An array of aggregators.
     def aggregators
       response = get_http '/aggregators?json=true'
-      JSON.parse response
+      MultiJson.load response
     end
 
     # Lists an array of log lines. By default, OpenTSDB returns 1024 lines.
@@ -42,7 +42,7 @@ module Continuum
     # An array of log lines.
     def logs
       response = get_http '/logs?json=true'
-      JSON.parse response
+      MultiJson.load response
     end
 
     # Queries the instance for a graph. 3 (useful) formats are supported:
@@ -85,7 +85,7 @@ module Continuum
       response = get_http "/q?#{params}"
 
       if format.to_sym == :json
-        JSON.parse response
+        MultiJson.load response
       else
         response
       end
@@ -113,7 +113,7 @@ module Continuum
       ret = []
       responses.each_with_index do |response, i|
         if reqs[i] =~ /json/ then
-          ret << JSON.parse(response)
+          ret << MultiJson.load(response)
         else
           ret << response
         end
@@ -128,7 +128,7 @@ module Continuum
     # An array of stats.
     def stats
       response = get_http '/stats?json'
-      JSON.parse response
+      MultiJson.load response
     end
 
     # Returns suggestions for metric or tag names.
@@ -145,7 +145,7 @@ module Continuum
     # An array of suggestions
     def suggest query, type = 'metrics'
       response = get_http "/suggest?q=#{query}&type=#{type}"
-      JSON.parse response
+      MultiJson.load response
     end
 
     # Format
@@ -168,7 +168,7 @@ module Continuum
     # An array with the version information
     def version
       response = get_http '/version?json'
-      JSON.parse response
+      MultiJson.load response
     end
 
     # Parses a query param hash into a query string as expected by OpenTSDB
