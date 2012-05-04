@@ -14,8 +14,6 @@ Gem::Specification.new do |s|
 
   s.rubyforge_project = "continuum"
   s.add_dependency 'rake'
-  s.add_dependency 'eventmachine'
-  s.add_dependency 'em-http-request', '~>1.0.2'
   s.add_development_dependency 'minitest'
   s.add_development_dependency 'webmock'
   s.add_development_dependency 'vcr', '1.5.0'

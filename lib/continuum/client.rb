@@ -1,8 +1,6 @@
 
 require 'json'
 require 'socket'
-require 'eventmachine'
-require 'em-http-request'
 
 module Continuum
 
@@ -207,7 +205,7 @@ module Continuum
     private
 
     def get_http(path)
-      return em_get_http(path_to_uri(path)).first
+      return thread_get_http(path_to_uri(path)).first
     end
 
     def multi_get_http(paths)
@@ -216,28 +214,33 @@ module Continuum
       paths.each do |path|
         uris << path_to_uri(path)
       end
-      return em_get_http(uris)
+      return thread_get_http(uris)
     end
 
-    def em_get_http(uris, threads=4)
+    def thread_get_http(uris, num_threads=4)
       uris = [ uris ] if not uris.kind_of? Array
       results = []
+      ret = {}
 
-      Batch.new(uris).each_with_index(threads) do |batch, pad|
-        EventMachine.run do
-          multi = EventMachine::MultiRequest.new
+      Batch.new(uris).each_with_index(num_threads) do |batch, batch_pad|
 
-          batch.each_with_index do |uri, i|
-            multi.add (i+pad), EventMachine::HttpRequest.new(uri).get
-          end
+        threads = []
 
-          multi.callback do
-            batch.each_with_index do |uri, i|
-              results << multi.responses[:callback][(i+pad)].response
-            end
-            EventMachine.stop
+        batch.each_with_index do |uri, i|
+          threads << Thread.new do
+            num = i+batch_pad
+            ret[num] = Net::HTTP.get(uri)
           end
         end
+
+        threads.each do |t|
+          t.join
+        end
+
+      end
+
+      (0..uris.size-1).each do |i|
+        results << ret[i]
       end
 
       return results
