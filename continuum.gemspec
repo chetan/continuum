@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
   s.rubyforge_project = "continuum"
   s.add_dependency 'rake'
   s.add_dependency 'multi_json'
+  s.add_dependency 'curb'
   s.add_development_dependency 'minitest'
   s.add_development_dependency 'webmock'
   s.add_development_dependency 'vcr', '1.5.0'

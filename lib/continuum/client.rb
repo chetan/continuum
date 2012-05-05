@@ -1,6 +1,7 @@
 
 require 'multi_json'
 require 'socket'
+require 'curb'
 
 module Continuum
 
@@ -229,7 +230,7 @@ module Continuum
         batch.each_with_index do |uri, i|
           threads << Thread.new do
             num = i+batch_pad
-            ret[num] = Net::HTTP.get(uri)
+            ret[num] = Curl::Easy.http_get(uri).body_str
           end
         end
 
@@ -248,7 +249,7 @@ module Continuum
 
     def path_to_uri(path)
       path = path[1..-1] if path[0..0] == "/"
-      return URI.parse("http://%s:%i/%s" % [@host, @port, path])
+      return "http://%s:%i/%s" % [@host, @port, path]
     end
 
     def client
