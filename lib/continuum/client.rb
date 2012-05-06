@@ -230,7 +230,9 @@ module Continuum
         batch.each_with_index do |uri, i|
           threads << Thread.new do
             num = i+batch_pad
-            ret[num] = Curl::Easy.http_get(uri).body_str
+            curl = Curl::Easy.http_get(uri)
+            ret[num] = curl.body_str
+            curl.close
           end
         end
 
