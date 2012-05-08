@@ -2,15 +2,16 @@
 require 'multi_json'
 require 'socket'
 require 'curb'
+require 'curb_threadpool'
 
 module Continuum
 
   # Create an instance of the client to interface with the OpenTSDB API (http://opentsdb.net/http-api.html)
   class Client
 
-    attr_reader :write_connection
+    attr_accessor :thread_key
 
-    # Create an connection to a specific OpenTSDB instance
+    # Create a connection to a specific OpenTSDB instance
     #
     # *Params:*
     #
@@ -23,6 +24,7 @@ module Continuum
     def initialize host = '127.0.0.1', port = 4242
       @host = host
       @port = port
+      @thread_key = :continuum
     end
 
     # Lists the supported aggregators by this instance
@@ -219,34 +221,8 @@ module Continuum
     end
 
     def thread_get_http(uris, num_threads=4)
-      uris = [ uris ] if not uris.kind_of? Array
-      results = []
-      ret = {}
-
-      Batch.new(uris).each_with_index(num_threads) do |batch, batch_pad|
-
-        threads = []
-
-        batch.each_with_index do |uri, i|
-          threads << Thread.new do
-            num = i+batch_pad
-            curl = Curl::Easy.http_get(uri)
-            ret[num] = curl.body_str
-            curl.close
-          end
-        end
-
-        threads.each do |t|
-          t.join
-        end
-
-      end
-
-      (0..uris.size-1).each do |i|
-        results << ret[i]
-      end
-
-      return results
+      Thread.current[@thread_key] ||= Curl::ThreadPool.new(num_threads)
+      return Thread.current[@thread_key].get(uris)
     end
 
     def path_to_uri(path)
@@ -275,24 +251,5 @@ module Continuum
     end # write
 
   end # Client
-
-  # Helper for multi_query
-  class Batch < Array
-    def each(batch_size, &block)
-      loops = (size().to_f / batch_size).ceil
-      (0..loops-1).each do |l|
-        batch = slice(l*batch_size, batch_size)
-        yield(batch)
-      end
-    end
-
-    def each_with_index(batch_size, &block)
-      c = 0
-      each(batch_size) do |batch|
-        yield(batch.to_a, c)
-        c += batch_size
-      end
-    end
-  end
 
 end
