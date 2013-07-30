@@ -20,6 +20,23 @@ module Continuum
       @thread_key = :continuum
     end
 
+    # Put metric
+    #
+    # put <metric> <tisse> <value> host=<hostname>
+    # put proc.loadavg.5m 1305308654 0.01 host=i-00000106
+    def put(name, value, ts = Time.now, tags = {})
+      tags ||= {}
+      tag_str = tags.collect { |k, v| "%s=%s" % [k, v] }.join(" ")
+      if !tag_str.empty?
+        tag_str = " #{tag_str}"
+      end
+      message = "put #{name} #{ts.to_i} #{value}#{tag_str}\n"
+      socket_write(message)
+      true
+    end
+    alias_method :metric, :put
+
+
 
     private
 
