@@ -1,11 +1,4 @@
 
-require 'multi_json'
-require 'socket'
-require 'curb'
-require 'curb_threadpool'
-
-require 'continuum/base_client'
-
 module Continuum
 
   # Create an instance of the client to interface with the OpenTSDB API (http://opentsdb.net/http-api.html)
@@ -65,7 +58,7 @@ module Continuum
     # The syntax for metrics (m) (square brackets indicate an optional part):
     #
     # AGG:[interval-AGG:][rate:]metric[{tag1=value1[,tag2=value2...]}]
-    def query(options = {})
+    def get(options = {})
       format = options.delete(:format) || options.delete('format') || 'json'
       options[format.to_sym] = true
       params   = query_params(options, [:start, :m])
@@ -77,13 +70,14 @@ module Continuum
         response
       end
     end
+    alias_method :query, :get
 
     # Run multiple parallel queries
     #
     # Takes an array of option hashes in the same format as the query method.
     #
     # * threads - maximum number of parallel connections
-    def multi_query(opts, threads=4)
+    def multi_get(opts, threads=4)
       if opts.nil? or opts.empty?
         return opts
       end
@@ -108,6 +102,7 @@ module Continuum
 
       return ret
     end
+    alias_method :multi_query, :multi_get
 
     # Stats about the OpenTSDB server itself.
     #
@@ -138,7 +133,7 @@ module Continuum
     # Format
     # put <metric> <tisse> <value> host=<hostname>
     # put proc.loadavg.5m 1305308654 0.01 host=i-00000106
-    def metric(name, value, ts = Time.now, tags = {})
+    def put(name, value, ts = Time.now, tags = {})
       tags ||= {}
       tag_str = tags.collect { |k, v| "%s=%s" % [k, v] }.join(" ")
       if !tag_str.empty?
@@ -148,6 +143,7 @@ module Continuum
       socket_write(message)
       true
     end
+    alias_method :metric, :put
 
     # Returns the version of OpenTSDB
     #
