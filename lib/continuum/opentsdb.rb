@@ -4,28 +4,12 @@ require 'socket'
 require 'curb'
 require 'curb_threadpool'
 
+require 'continuum/base_client'
+
 module Continuum
 
   # Create an instance of the client to interface with the OpenTSDB API (http://opentsdb.net/http-api.html)
-  class OpenTSDB
-
-    attr_accessor :thread_key
-
-    # Create a connection to a specific OpenTSDB instance
-    #
-    # *Params:*
-    #
-    # * host is the host IP (defaults to localhost)
-    # * port is the host's port (defaults to 4242)
-    #
-    # *Returns:*
-    #
-    # A client to play with
-    def initialize host = '127.0.0.1', port = 4242
-      @host = host
-      @port = port
-      @thread_key = :continuum
-    end
+  class OpenTSDB < BaseClient
 
     # Lists the supported aggregators by this instance
     #
@@ -81,7 +65,7 @@ module Continuum
     # The syntax for metrics (m) (square brackets indicate an optional part):
     #
     # AGG:[interval-AGG:][rate:]metric[{tag1=value1[,tag2=value2...]}]
-    def query options = {}
+    def query(options = {})
       format = options.delete(:format) || options.delete('format') || 'json'
       options[format.to_sym] = true
       params   = query_params(options, [:start, :m])
@@ -99,7 +83,7 @@ module Continuum
     # Takes an array of option hashes in the same format as the query method.
     #
     # * threads - maximum number of parallel connections
-    def multi_query opts, threads=4
+    def multi_query(opts, threads=4)
       if opts.nil? or opts.empty?
         return opts
       end
@@ -146,7 +130,7 @@ module Continuum
     #
     # Returns:
     # An array of suggestions
-    def suggest query, type = 'metrics'
+    def suggest(query, type = 'metrics')
       response = get_http "/suggest?q=#{query}&type=#{type}"
       MultiJson.load response
     end
@@ -154,7 +138,7 @@ module Continuum
     # Format
     # put <metric> <tisse> <value> host=<hostname>
     # put proc.loadavg.5m 1305308654 0.01 host=i-00000106
-    def metric name, value, ts = Time.now, tags = {}
+    def metric(name, value, ts = Time.now, tags = {})
       tags ||= {}
       tag_str = tags.collect { |k, v| "%s=%s" % [k, v] }.join(" ")
       if !tag_str.empty?
@@ -182,7 +166,7 @@ module Continuum
     # A query string
     # Raises:
     # ArgumentError if a required parameter is missing
-    def query_params params = {}, requirements = []
+    def query_params(params = {}, requirements = [])
       query = []
 
       requirements.each do |req|
@@ -204,52 +188,6 @@ module Continuum
       query.join '&'
     end
 
-
-    private
-
-    def get_http(path)
-      return thread_get_http(path_to_uri(path)).first
-    end
-
-    def multi_get_http(paths)
-      paths = [ paths ] if not paths.kind_of? Array
-      uris = []
-      paths.each do |path|
-        uris << path_to_uri(path)
-      end
-      return thread_get_http(uris)
-    end
-
-    def thread_get_http(uris, num_threads=4)
-      Thread.current[@thread_key] ||= Curl::ThreadPool.new(num_threads)
-      return Thread.current[@thread_key].get(uris)
-    end
-
-    def path_to_uri(path)
-      path = path[1..-1] if path[0..0] == "/"
-      return "http://%s:%i/%s" % [@host, @port, path]
-    end
-
-    def client
-      @client ||= TCPSocket.new(@host, @port)
-    end
-
-    def socket_write(msg)
-      c = 0
-      loop do
-
-        c += 1
-        begin
-          client.sendmsg(msg)
-          return
-        rescue Exception => ex
-          @client = nil
-          raise ex if c > 3
-        end
-
-      end # loop
-    end # write
-
-  end # Client
+  end # OpenTSDB
 
 end
