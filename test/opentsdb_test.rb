@@ -1,8 +1,8 @@
 require 'test_helper'
 
-describe Continuum::Client do
+describe Continuum::OpenTSDB do
   before do
-    @client = Continuum::Client.new '10.3.172.58', '4242'
+    @client = Continuum::OpenTSDB.new '10.3.172.58', '4242'
   end
 
   describe :aggregators do

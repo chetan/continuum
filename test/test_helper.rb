@@ -3,7 +3,6 @@ Bundler.setup :default, :test
 require "continuum"
 require "webmock"
 require "minitest/spec"
-require "nokogiri"
 require "vcr"
 
 require 'turn'

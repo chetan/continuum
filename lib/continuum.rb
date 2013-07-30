@@ -1,5 +1,6 @@
 
-require 'continuum/client'
+require 'continuum/opentsdb'
+# require 'continuum/kairosdb'
 
 ## Continuum
 #A Ruby gem which integrates with the OpenTSDB API

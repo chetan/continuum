@@ -7,7 +7,7 @@ require 'curb_threadpool'
 module Continuum
 
   # Create an instance of the client to interface with the OpenTSDB API (http://opentsdb.net/http-api.html)
-  class Client
+  class OpenTSDB
 
     attr_accessor :thread_key
 

@@ -17,12 +17,11 @@ Gem::Specification.new do |s|
   s.add_dependency 'multi_json'
   s.add_dependency 'curb'
   s.add_dependency 'curb_threadpool'
-  s.add_development_dependency 'minitest'
-  s.add_development_dependency 'webmock'
-  s.add_development_dependency 'vcr', '1.5.0'
+  s.add_development_dependency 'minitest', '<5.0'
+  s.add_development_dependency 'webmock', '=1.6.0'
+  s.add_development_dependency 'vcr', '=1.5.0'
   s.add_development_dependency 'autotest-standalone'
   s.add_development_dependency 'bundler'
-  s.add_development_dependency 'nokogiri'
   s.add_development_dependency 'turn'
 
 
