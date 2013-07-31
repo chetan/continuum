@@ -2,8 +2,6 @@
 module Continuum
   class BaseClient
 
-    attr_accessor :thread_key
-
     # Create a connection to the server
     #
     # *Params:*
@@ -16,8 +14,7 @@ module Continuum
     # A client to play with
     def initialize(host = '127.0.0.1', port = 4242)
       @host = host
-      @port = port
-      @thread_key = :continuum
+      @port = @http_port = port.to_i
     end
 
     # Put metric
@@ -41,15 +38,12 @@ module Continuum
     private
 
     def get_http(path)
-      return thread_get_http(path_to_uri(path)).first
+      return multi_get_http(path).first
     end
 
     def multi_get_http(paths)
       paths = [ paths ] if not paths.kind_of? Array
-      uris = []
-      paths.each do |path|
-        uris << path_to_uri(path)
-      end
+      uris = paths.map { |path| path_to_uri(path) }
       return thread_get_http(uris)
     end
 
@@ -83,8 +77,8 @@ module Continuum
 
     def path_to_uri(path)
       path = path[1..-1] if path[0..0] == "/"
-      return "http://%s:%i/%s" % [@host, @port, path]
+      return "http://%s:%i/%s" % [@host, @http_port, path]
     end
 
-  end # ClientUtil
+  end # BaseClient
 end

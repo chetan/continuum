@@ -4,6 +4,11 @@ module Continuum
   # Create an instance of the client to interface with the OpenTSDB API (http://opentsdb.net/http-api.html)
   class OpenTSDB < BaseClient
 
+    def initialize(host='127.0.0.1', port=4242)
+      super
+      @thread_key = :continuum_opentsdb
+    end
+
     # Lists the supported aggregators by this instance
     #
     # *Returns:*

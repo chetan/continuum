@@ -2,6 +2,7 @@ Bundler.setup :default, :test
 
 require "continuum"
 require "webmock"
+require "minitest/unit"
 require "minitest/spec"
 require "vcr"
 
