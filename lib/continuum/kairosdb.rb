@@ -32,7 +32,7 @@ module Continuum
     #   {"name"=>"foo.bar.df", "tags"=>{"foo"=>["bar"]}, "values"=>[[1375189490000, 3.200000047683716], [1375189940000, 3.200000047683716]]}
     #
     def get(opts)
-      multi_get([opts])
+      multi_get([opts]).first
     end
 
     def multi_get(opts, threads=4)
