@@ -41,8 +41,8 @@ module Continuum
 
         query = {}
 
-        query[:start_absolute] = opt[:start_time]
-        query[:end_absolute]   = opt[:end_time]
+        query[:start_absolute] = opt[:start_time].to_i
+        query[:end_absolute]   = opt[:end_time].to_i
 
         metric = {
           :name => opt[:key]
