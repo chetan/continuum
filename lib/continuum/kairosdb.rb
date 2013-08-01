@@ -95,7 +95,11 @@ module Continuum
       reqs = queries.map { |q| [uri, MultiJson.dump(q)] }
       http_thread_pool.post(reqs).map do |r|
         obj = MultiJson.load(r)
-        results = obj["queries"].first["results"].first
+        if obj["errors"] then
+          {}
+        else
+          obj["queries"].first["results"].first
+        end
       end
     end
 
