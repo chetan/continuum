@@ -12,7 +12,6 @@ module Continuum
     def do_multi_get_http(uris)
       uris = [uris] if not uris.kind_of? Array
       uris.map do |uri|
-        puts "httpi.getting #{uri.to_s}"
         HTTPI.get(uri).body
       end
     end
@@ -22,16 +21,7 @@ module Continuum
     # @param [Array<Array<String, String>>] reqs      Array of reqs, where req is [uri, body]
     def do_multi_post_http(reqs)
       reqs.map do |req|
-        url = req.shift
-        body = req.shift
-        puts "httpi.posting #{url}"
-        p body
-        ret = HTTPI.post(HTTPI::Request.new(:url => url, :body => body))
-        p ret
-        p ret.body
-        puts
-        puts
-        ret.body
+        HTTPI.post(HTTPI::Request.new(:url => req.shift, :body => req.shift)).body
       end
     end
 
