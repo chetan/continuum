@@ -48,8 +48,15 @@ end
 
 require 'multi_json'
 require 'socket'
-require 'curb'
-require 'curb_threadpool'
+
+begin
+  require 'curb'
+  require 'curb_threadpool'
+  require 'continuum/http/curb'
+rescue LoadError => ex
+  require 'httpi'
+  require 'continuum/http/httpi'
+end
 
 require 'continuum/base_client'
 require 'continuum/opentsdb'

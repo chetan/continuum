@@ -44,16 +44,16 @@ module Continuum
     def multi_get_http(paths)
       paths = [ paths ] if not paths.kind_of? Array
       uris = paths.map { |path| path_to_uri(path) }
-      return thread_get_http(uris)
+      return do_multi_get_http(uris)
     end
 
-    def thread_get_http(uris)
-      http_thread_pool.get(uris)
+    def path_to_uri(path)
+      path = path[1..-1] if path[0..0] == "/"
+      return "http://%s:%i/%s" % [@host, @http_port, path]
     end
 
-    def http_thread_pool(num_threads=4)
-      Thread.current[@thread_key] ||= Curl::ThreadPool.new(num_threads)
-    end
+
+    # Socket client (for puts)
 
     def socket
       @socket ||= TCPSocket.new(@host, @port)
@@ -74,11 +74,6 @@ module Continuum
 
       end # loop
     end # write
-
-    def path_to_uri(path)
-      path = path[1..-1] if path[0..0] == "/"
-      return "http://%s:%i/%s" % [@host, @http_port, path]
-    end
 
   end # BaseClient
 end

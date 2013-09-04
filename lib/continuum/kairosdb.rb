@@ -93,8 +93,8 @@ module Continuum
     def multi_post_http(queries)
       uri = path_to_uri("/api/v1/datapoints/query")
       reqs = queries.map { |q| [uri, MultiJson.dump(q)] }
-      http_thread_pool.post(reqs).map do |r|
-        obj = MultiJson.load(r)
+      do_multi_post_http(reqs).map do |body|
+        obj = MultiJson.load(body)
         if obj["errors"] then
           {}
         else

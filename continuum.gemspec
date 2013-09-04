@@ -15,8 +15,12 @@ Gem::Specification.new do |s|
   s.rubyforge_project = "continuum"
   s.add_dependency 'rake'
   s.add_dependency 'multi_json'
-  s.add_dependency 'curb'
-  s.add_dependency 'curb_threadpool'
+
+  # need either httpi or curb+curb_threadpool
+  s.add_development_dependency 'httpi'
+  s.add_development_dependency 'curb'
+  s.add_development_dependency 'curb_threadpool'
+
   s.add_development_dependency 'minitest', '<5.0'
   s.add_development_dependency 'webmock', '=1.6.0'
   s.add_development_dependency 'vcr', '=1.5.0'
