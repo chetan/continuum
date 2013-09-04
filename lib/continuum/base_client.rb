@@ -55,8 +55,8 @@ module Continuum
       Thread.current[@thread_key] ||= Curl::ThreadPool.new(num_threads)
     end
 
-    def client
-      @client ||= TCPSocket.new(@host, @port)
+    def socket
+      @socket ||= TCPSocket.new(@host, @port)
     end
 
     def socket_write(msg)
@@ -65,10 +65,10 @@ module Continuum
 
         c += 1
         begin
-          client.sendmsg(msg)
+          socket.sendmsg(msg)
           return
         rescue Exception => ex
-          @client = nil
+          @socket = nil
           raise ex if c > 3
         end
 
