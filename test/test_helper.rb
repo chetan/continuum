@@ -1,7 +1,12 @@
 Bundler.setup :default, :test
 
 require "continuum"
+require "httpi"
+require "curb"
+require "curb_threadpool"
+
 require "webmock"
+
 require "minitest/unit"
 require "minitest/spec"
 require "vcr"
