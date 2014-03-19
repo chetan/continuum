@@ -96,7 +96,7 @@ describe Continuum::OpenTSDB do
 
       it 'should return a PNG' do
         lines = @data.split("\n")
-        assert_equal "\x89PNG\r", lines.first
+        assert_equal "\x89PNG\r".bytes, lines.first.bytes
       end
     end
   end
