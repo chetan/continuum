@@ -20,6 +20,9 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'httpi'
   s.add_development_dependency 'curb'
   s.add_development_dependency 'curb_threadpool'
+  s.add_development_dependency 'bixby-api_pool', '~> 0.1'
+  s.add_development_dependency 'ethon', '~> 0.7.0'
+  s.add_development_dependency 'actionpool', '~> 0.2.3'
 
   s.add_development_dependency 'minitest', '<5.0'
   s.add_development_dependency 'webmock', '=1.6.0'
@@ -27,6 +30,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'autotest-standalone'
   s.add_development_dependency 'bundler'
   s.add_development_dependency 'turn'
+  s.add_development_dependency 'pry'
 
 
   s.files         = `git ls-files`.split("\n")

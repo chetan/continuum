@@ -50,12 +50,16 @@ require 'multi_json'
 require 'socket'
 
 begin
-  require 'curb'
-  require 'curb_threadpool'
-  require 'continuum/http/curb'
-rescue LoadError => ex
-  require 'httpi'
-  require 'continuum/http/httpi'
+  require 'continuum/http/api_pool'
+rescue LoadError
+  begin
+    require 'curb'
+    require 'curb_threadpool'
+    require 'continuum/http/curb'
+  rescue LoadError
+    require 'httpi'
+    require 'continuum/http/httpi'
+  end
 end
 
 require 'continuum/base_client'
