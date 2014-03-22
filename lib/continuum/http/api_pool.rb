@@ -12,7 +12,7 @@ module Continuum
     #
     # @param [Array<String>]
     def do_multi_get_http(uris)
-      Bixby::APIPool.get(uris, key(uris.first), 10)
+      Bixby::APIPool.get(uris, key(uris.first))
     end
 
     # POST the given requests
@@ -20,7 +20,7 @@ module Continuum
     # @param [Array<Array<String, String>>] reqs      Array of reqs, where req is [uri, body]
     def do_multi_post_http(reqs)
       reqs = reqs.map{ |r| Bixby::APIPool::Request.new(r.shift, :post, r.shift)}
-      Bixby::APIPool.fetch(reqs, key(reqs.first.url), 10)
+      Bixby::APIPool.fetch(reqs, key(reqs.first.url))
     end
 
     def key(uri)
