@@ -35,7 +35,7 @@ module Continuum
       multi_get([opts]).first
     end
 
-    def multi_get(opts, threads=4)
+    def multi_get(opts)
       queries = []
       opts.each do |opt|
 

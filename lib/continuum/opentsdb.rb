@@ -80,9 +80,7 @@ module Continuum
     # Run multiple parallel queries
     #
     # Takes an array of option hashes in the same format as the query method.
-    #
-    # * threads - maximum number of parallel connections
-    def multi_get(opts, threads=4)
+    def multi_get(opts)
       if opts.nil? or opts.empty?
         return opts
       end
